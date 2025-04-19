@@ -14,10 +14,10 @@ describe("LandingPage tests", () => {
     const landingPageImageRTL = getByAltText("goat");
     const landingPageImagePL = getByAltText("masks");
 
-    expect(landingPageText).toBeInTheDocument();
-    expect(landingPageButton).toBeInTheDocument();
-    expect(landingPageImageTL).toBeInTheDocument();
-    expect(landingPageImageRTL).toBeInTheDocument();
-    expect(landingPageImagePL).toBeInTheDocument();
+    expect(landingPageText).toBeVisible();
+    expect(landingPageButton).toBeVisible();
+    expect(landingPageImageTL).toBeVisible();
+    expect(landingPageImageRTL).toBeVisible();
+    expect(landingPageImagePL).toBeVisible();
   });
 });

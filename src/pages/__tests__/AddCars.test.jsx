@@ -39,13 +39,13 @@ describe("AddCars tests", () => {
       name: /add car/i,
     });
 
-    expect(segment).toBeInTheDocument();
-    expect(model).toBeInTheDocument();
-    expect(brand).toBeInTheDocument();
-    expect(fuel).toBeInTheDocument();
-    expect(price).toBeInTheDocument();
-    expect(photo).toBeInTheDocument();
-    expect(addButton).toBeInTheDocument();
+    expect(segment).toBeVisible();
+    expect(model).toBeVisible();
+    expect(brand).toBeVisible();
+    expect(fuel).toBeVisible();
+    expect(price).toBeVisible();
+    expect(photo).toBeVisible();
+    expect(addButton).toBeVisible();
   });
 
   it("shouldnt allow to submit an empty form", async () => {
@@ -55,7 +55,7 @@ describe("AddCars tests", () => {
     });
     await user.click(addButton);
     const errorMessage = await screen.findByText(/please fill in all data/i);
-    expect(errorMessage).toBeInTheDocument();
+    expect(errorMessage).toBeVisible();
   });
 
   it("shouldnt allow to submit a negative number", async () => {
@@ -99,7 +99,7 @@ describe("AddCars tests", () => {
     const errorMessage = await screen.findByText(
       /the price needs to be greater than 0/i
     );
-    expect(errorMessage).toBeInTheDocument();
+    expect(errorMessage).toBeVisible();
   });
 
   it("should add a car", async () => {
@@ -146,7 +146,7 @@ describe("AddCars tests", () => {
       dummyCarCreateData
     );
     const successMessage = await screen.findByText(/car was created/i);
-    expect(successMessage).toBeInTheDocument();
+    expect(successMessage).toBeVisible();
   });
 
   it("should navigate to cars list after submit", async () => {
@@ -232,6 +232,6 @@ describe("AddCars tests", () => {
     const errorMessage = await screen.findByText(
       /something went wrong when creating a car/i
     );
-    expect(errorMessage).toBeInTheDocument();
+    expect(errorMessage).toBeVisible();
   });
 });

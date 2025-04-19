@@ -32,10 +32,10 @@ describe("Register tests", () => {
       name: /i have an account/i,
     });
 
-    expect(usernameInput).toBeInTheDocument();
-    expect(emailInput).toBeInTheDocument();
-    expect(registerButton).toBeInTheDocument();
-    expect(createAccountLink).toBeInTheDocument();
+    expect(usernameInput).toBeVisible();
+    expect(emailInput).toBeVisible();
+    expect(registerButton).toBeVisible();
+    expect(createAccountLink).toBeVisible();
   });
 
   it("should register", async () => {

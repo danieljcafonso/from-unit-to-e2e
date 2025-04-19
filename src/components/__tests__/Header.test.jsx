@@ -28,9 +28,9 @@ describe("Header tests", () => {
       name: /change theme/i,
     });
 
-    expect(carsList).toBeInTheDocument();
-    expect(addCars).toBeInTheDocument();
-    expect(themeToggle).toBeInTheDocument();
+    expect(carsList).toBeVisible();
+    expect(addCars).toBeVisible();
+    expect(themeToggle).toBeVisible();
   });
 
   it("should render logout button when authenticated", () => {
@@ -40,7 +40,7 @@ describe("Header tests", () => {
     const logoutButton = screen.getByLabelText(
       `Logout from ${dummyUserData.username}`
     );
-    expect(logoutButton).toBeInTheDocument();
+    expect(logoutButton).toBeVisible();
   });
 
   it("should logout on logout click", async () => {
@@ -97,12 +97,12 @@ describe("Header tests", () => {
   it("should have dark mode toggled on", () => {
     render(<Header isDarkMode={true} />);
     const darkModeButton = screen.getByTestId("dark_mode");
-    expect(darkModeButton).toBeInTheDocument();
+    expect(darkModeButton).toBeVisible();
   });
 
   it("should have light mode toggled on", () => {
     render(<Header isDarkMode={false} />);
     const lightModeButton = screen.getByTestId("light_mode");
-    expect(lightModeButton).toBeInTheDocument();
+    expect(lightModeButton).toBeVisible();
   });
 });

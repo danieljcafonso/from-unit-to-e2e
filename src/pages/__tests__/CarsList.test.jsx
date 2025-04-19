@@ -14,7 +14,7 @@ describe("CarsList tests", () => {
   it("should show loading spinner", async () => {
     render(<CarsList />);
     const loadingSpinner = await screen.findByRole("progressbar");
-    expect(loadingSpinner).toBeInTheDocument();
+    expect(loadingSpinner).toBeVisible();
   });
 
   it("should show data", async () => {
@@ -23,8 +23,8 @@ describe("CarsList tests", () => {
     const carImage = screen.getByRole("img", {
       name: /audi guinea/i,
     });
-    expect(carCard).toBeInTheDocument();
-    expect(carImage).toBeInTheDocument();
+    expect(carCard).toBeVisible();
+    expect(carImage).toBeVisible();
   });
 
   it("should show no cars warning when no data", async () => {
@@ -34,7 +34,7 @@ describe("CarsList tests", () => {
 
     render(<CarsList />);
     const noCarsMessage = await screen.findByText("No cars to display...");
-    expect(noCarsMessage).toBeInTheDocument();
+    expect(noCarsMessage).toBeVisible();
   });
 
   it("should delete a car", async () => {
@@ -48,7 +48,7 @@ describe("CarsList tests", () => {
     await user.click(deleteButton);
 
     const successMessage = await screen.findByText(/car was deleted/i);
-    expect(successMessage).toBeInTheDocument();
+    expect(successMessage).toBeVisible();
   });
 
   it("should fail to delete a car", async () => {
@@ -66,6 +66,6 @@ describe("CarsList tests", () => {
     const errorMessage = await screen.findByText(
       /something went wrong when deleting a car/i
     );
-    expect(errorMessage).toBeInTheDocument();
+    expect(errorMessage).toBeVisible();
   });
 });
