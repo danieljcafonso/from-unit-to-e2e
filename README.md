@@ -15,22 +15,13 @@ In this application we can do the following:
 Clone this repository (or fork it), check in to the branch `feat/start_here`, and install all dependencies by running:
 
 ```
-npm i
-# or
-yarn
-# or
 pnpm i
 ```
 
 To run the app, run the development server:
 
 ```
-npm dev
-# or
-yarn dev
-# or
 pnpm dev
-
 ```
 
 Open [http://localhost:5173](http://localhost:5173/) in your browser to see the page. On your first time using the app, you need to create an account using a username and an email. These are just dummy things to have the functionality in the app.
@@ -118,10 +109,14 @@ Let us start by implementing the first test scenario.
 <p>
 
 ```jsx
-it("should show loading spinner", async () => {
-  render(<CarsList />);
-  const loadingSpinner = await screen.findByRole("progressbar");
-  expect(loadingSpinner).toBeVisible();
+import CarsList from "../CarsList";
+
+describe("CarsList tests", () => {
+  it("should show loading spinner", async () => {
+    render(<CarsList />);
+    const loadingSpinner = await screen.findByRole("progressbar");
+    expect(loadingSpinner).toBeVisible();
+  });
 });
 ```
 
@@ -921,10 +916,6 @@ export const dummyCarCreateData = {
 To add MSW to your application, run the following;
 
 ```jsx
-npm install msw --save-dev
-# or
-yarn add msw --dev
-# or
 pnpm add msw --save-dev
 ```
 
@@ -937,6 +928,13 @@ pnpm add msw --save-dev
 <p>
 
 ```jsx
+import { http, HttpResponse } from "msw";
+import {
+  dummyUserData,
+  dummyCarCreateData,
+  dummyCarList,
+} from "../utils/test-utils";
+
 export const handlers = [
   // Handles a POST /login request
   http.post("*/carslogin*", () => {
@@ -1012,4 +1010,438 @@ server.use(
     return HttpResponse.json(null, { status: 200 });
   })
 );
+```
+
+## Exercise 7
+
+Vitest Browser Mode allows you to turn your integration tests into component tests that run on a browser environment instead of a node-based one.
+
+```jsx
+pnpx vitest init browser
+```
+
+### Update vitest.workspace.js
+
+Let's make sure our `vitest.workspace.js` file includes a `viewport` and `instances`
+
+<details>
+
+<summary> See solution </summary>
+
+<p>
+
+```js
+import { defineWorkspace } from "vitest/config";
+
+export default defineWorkspace([
+  // If you want to keep running your existing tests in Node.js, uncomment the next line.
+  // 'vite.config.js',
+  {
+    extends: "vite.config.js",
+    test: {
+      browser: {
+        enabled: true,
+        provider: "playwright",
+        viewport: { width: 1200, height: 1200 },
+        // https://vitest.dev/guide/browser/playwright
+        instances: [{ browser: "chromium" }],
+      },
+    },
+  },
+]);
+```
+
+</p>
+
+</details>
+
+### Update MSW
+
+As we are now using a browser env, we can't use a node interceptor version. We need to use a service worker for intercepting our requests.
+
+Lets run the following command:
+
+```jsx
+npx msw init public --save
+```
+
+and create a `worker.js` file (delete your `server.js` if not needed)
+
+<details>
+
+<summary> See solution </summary>
+<p>
+
+```jsx
+import { setupWorker } from "msw/browser";
+import { handlers } from "./handlers";
+
+export const worker = setupWorker(...handlers);
+```
+
+</p>
+
+</details>
+
+### Get rid of RTL and use vitest-browser-react
+
+Update your `test-utils.jsx` to remove RTL from it.
+
+<details>
+
+<summary> See solution </summary>
+
+<p>
+
+```jsx
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import AuthProvider from "../context/AuthContext";
+import { SnackbarProvider } from "notistack";
+import { render } from "vitest-browser-react";
+
+export const dummyUserData = { username: "daniel", email: "daniel@admin.com" };
+
+export const dummyCarList = {
+  thisisacarid: {
+    brand: "Audi",
+    model: "Guinea",
+    segment: "Van",
+    price: 12000,
+    fuel: "Diesel",
+    photo:
+      "https://as2.ftcdn.net/v2/jpg/00/16/14/89/1000_F_16148967_YvRk9vkq8eyVda5pDAeTRCvciG87ucqJ.jpg",
+  },
+};
+
+export const dummyCarCreateData = {
+  brand: "Audi",
+  model: "Guinea",
+  segment: "Van",
+  price: "12000",
+  fuel: "Diesel",
+  photo:
+    "https://as2.ftcdn.net/v2/jpg/00/16/14/89/1000_F_16148967_YvRk9vkq8eyVda5pDAeTRCvciG87ucqJ.jpg",
+};
+
+export const customRender = (ui, { ...options } = {}) => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 0,
+        staleTime: Infinity,
+      },
+    },
+  });
+
+  const CombinedProviders = ({ children }) => {
+    return (
+      <SnackbarProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>{children}</AuthProvider>
+        </QueryClientProvider>
+      </SnackbarProvider>
+    );
+  };
+  return {
+    ...render(ui, { wrapper: CombinedProviders, ...options }),
+  };
+};
+```
+
+</p>
+
+</details>
+
+Now we dont have access to globals so we need to modify window and update our `setup.js`
+
+Note: Now you are running on a browser env so you need to consider that for the localStorage mocks
+
+<details>
+
+<summary> See solution </summary>
+
+<p>
+
+```js
+import { worker } from "./mocks/worker";
+import { customRender, dummyUserData } from "./utils/test-utils";
+import { userEvent } from "@vitest/browser/context";
+
+window.render = customRender; // make render available in all tests
+window.user = userEvent.setup();
+
+vi.mock("react-router", () => ({
+  ...vi.importActual("react-router"),
+  useNavigate: vi.fn(),
+  useLocation: vi.fn(),
+}));
+
+beforeAll(() => worker.start());
+afterEach(() => worker.resetHandlers());
+
+beforeEach(() => {
+  window.localStorage.setItem("loggedUser", JSON.stringify(dummyUserData));
+});
+afterAll(() => {
+  window.localStorage.setItem("loggedUser", null);
+  worker.stop();
+});
+```
+
+</p>
+
+</details>
+
+### Update all your tests
+
+Now it is time to update your tests, here are somethings to keep in mind:
+
+- every test becomes async
+- `screen` need to be destructured from `render`
+- every query becomes async
+- `findBy` doesnt exist
+- `user` is now a global
+- you no longer access localStorage mocks but instead access the browser version
+- remove every RTL util
+- When asserting for elements use `await expect.element`
+
+## Exercise 8
+
+Time for E2Es, let's add Playwright
+
+```
+pnpm create playwright
+```
+
+### Updating Playwright config
+
+Let's tweak our `playwright.config.js` to use localhost as the baseURL and start up the app before running any tests.
+
+<details>
+
+<summary> See solution </summary>
+
+<p>
+
+```js
+// @ts-check
+import { defineConfig, devices } from "@playwright/test";
+
+/**
+ * @see https://playwright.dev/docs/test-configuration
+ */
+export default defineConfig({
+  testDir: "./e2e",
+  /* Run tests in files in parallel */
+  fullyParallel: true,
+  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  forbidOnly: !!process.env.CI,
+  /* Retry on CI only */
+  retries: process.env.CI ? 2 : 0,
+  /* Opt out of parallel tests on CI. */
+  workers: process.env.CI ? 1 : undefined,
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  reporter: "html",
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  use: {
+    baseURL: "http://localhost:5173",
+
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    trace: "on-first-retry",
+  },
+
+  /* Configure projects for major browsers */
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
+  ],
+
+  /* Run your local dev server before starting the tests */
+  webServer: {
+    command: "pnpm run dev",
+    url: "http://localhost:5173",
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+</p>
+
+</details>
+
+### Using Codegen to write some tests
+
+```
+pnpm exec playwright codegen
+```
+
+### Run the tests
+
+```
+pnpm exec playwright test --ui
+```
+
+## Exercise 9
+
+Time for BDDs, let's add Playwright-BDD
+
+```
+pnpm i -D playwright-bdd
+```
+
+### Updating Playwright config
+
+Let's tweak our `playwright.config.js` to use the playwright-bdd config and still listed for our e2e tests.
+
+<details>
+
+<summary> See solution </summary>
+
+<p>
+
+```js
+// @ts-check
+import { defineConfig, devices } from "@playwright/test";
+import { defineBddConfig } from "playwright-bdd";
+
+const testDir = defineBddConfig({
+  features: "features/*.feature",
+  steps: "features/steps/*.js",
+});
+
+/**
+ * @see https://playwright.dev/docs/test-configuration
+ */
+export default defineConfig({
+  testDir,
+  /* Run tests in files in parallel */
+  fullyParallel: true,
+  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  forbidOnly: !!process.env.CI,
+  /* Retry on CI only */
+  retries: process.env.CI ? 2 : 0,
+  /* Opt out of parallel tests on CI. */
+  workers: process.env.CI ? 1 : undefined,
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  reporter: "html",
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  use: {
+    baseURL: "http://localhost:5173",
+
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    trace: "on-first-retry",
+  },
+
+  /* Configure projects for major browsers */
+  projects: [
+    {
+      name: "e2e",
+      testDir: "./e2e", // <-- set testDir for setup project
+    },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
+  ],
+
+  /* Run your local dev server before starting the tests */
+  webServer: {
+    command: "pnpm run dev",
+    url: "http://localhost:5173",
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+</p>
+
+</details>
+
+### Create our features and steps
+
+Let's create a folder called `features` that inside has another folder called `steps`.
+
+In the `features` folder lets use Gherkin to describe our functionality.
+
+<details>
+
+<summary> See solution </summary>
+
+<p>
+
+```gherkin
+Feature: Login Functionality
+    Scenario: Verify Login
+        Given User navigates to page
+        When User logs in
+        Then It should show Landing Page
+```
+
+</p>
+
+</details>
+
+In the `steps` folder lets now create a `steps.js` that will describe what needs to run whenever each step is called.
+
+<details>
+
+<summary> See solution </summary>
+
+```jsx
+import { expect } from "@playwright/test";
+import { createBdd } from "playwright-bdd";
+
+const { Given, When, Then } = createBdd();
+
+Given("User navigates to page", async ({ page }) => {
+  await page.goto("http://localhost:5173/login");
+});
+
+When("User logs in", async ({ page }) => {
+  await page.getByRole("textbox", { name: "Username" }).click();
+  await page.getByRole("textbox", { name: "Username" }).fill("admin");
+  await page.getByRole("textbox", { name: "Email" }).click();
+  await page.getByRole("textbox", { name: "Email" }).fill("admin@admin.com");
+  await page.getByRole("button", { name: "Login" }).click();
+});
+
+Then("It should show Landing Page", async ({ page }) => {
+  await expect(
+    page.getByRole("heading", { name: "From Unit to E2Es — A Testing" })
+  ).toBeVisible();
+});
+```
+
+<p>
+
+</p>
+
+</details>
+
+### Run the tests
+
+```
+npx bddgen && npx playwright test
 ```
