@@ -1,64 +1,63 @@
 import Register from "../Register";
-import { screen, waitFor, dummyUserData } from "../../utils/test-utils";
-import * as useLocalStorage from "../../hooks/useLocalStorage";
+import { dummyUserData } from "../../utils/test-utils";
 import { useNavigate } from "react-router";
+import { page } from "@vitest/browser/context";
 
 const navigateMockFn = vi.fn();
 
-const setLocalStorage = vi.fn();
-
 describe("Register tests", () => {
   beforeEach(() => {
-    useLocalStorage.default = vi.fn(() => [null, setLocalStorage]);
     useNavigate.mockImplementation(() => navigateMockFn);
   });
 
-  it("should render", () => {
+  it("should render", async () => {
     render(<Register />);
-    const usernameInput = screen.getByRole("textbox", {
+    const usernameInput = page.getByRole("textbox", {
       name: /username/i,
     });
-    const emailInput = screen.getByRole("textbox", {
+    const emailInput = page.getByRole("textbox", {
       name: /email/i,
     });
-    const registerButton = screen.getByRole("button", {
+    const registerButton = page.getByRole("button", {
       name: /register/i,
     });
-    const createAccountLink = screen.getByRole("link", {
+    const createAccountLink = page.getByRole("link", {
       name: /i have an account/i,
     });
 
-    expect(usernameInput).toBeVisible();
-    expect(emailInput).toBeVisible();
-    expect(registerButton).toBeVisible();
-    expect(createAccountLink).toBeVisible();
+    await expect.element(usernameInput).toBeVisible();
+    await expect.element(emailInput).toBeVisible();
+    await expect.element(registerButton).toBeVisible();
+    await expect.element(createAccountLink).toBeVisible();
   });
 
   it("should register", async () => {
-    const { user } = render(<Register />);
-    const usernameInput = screen.getByRole("textbox", {
+    window.localStorage.setItem("loggedUser", null);
+
+    render(<Register />);
+    const usernameInput = page.getByRole("textbox", {
       name: /username/i,
     });
-    const emailInput = screen.getByRole("textbox", {
+    const emailInput = page.getByRole("textbox", {
       name: /email/i,
     });
-    const registerButton = screen.getByRole("button", {
+    const registerButton = page.getByRole("button", {
       name: /register/i,
     });
     await user.type(usernameInput, dummyUserData.username);
     await user.type(emailInput, dummyUserData.email);
     await user.click(registerButton);
 
-    await waitFor(() =>
-      expect(setLocalStorage).toHaveBeenCalledWith(dummyUserData)
+    await expect(window.localStorage.getItem("loggedUser")).toBe(
+      JSON.stringify(dummyUserData)
     );
   });
 
   it("should call navigate on logged user", async () => {
-    useLocalStorage.default = vi.fn(() => ["danieljcafonso", setLocalStorage]);
+    window.localStorage.setItem("loggedUser", JSON.stringify(dummyUserData));
 
     render(<Register />);
 
-    await waitFor(() => expect(navigateMockFn).toHaveBeenCalledWith("/"));
+    await expect(navigateMockFn).toHaveBeenCalledWith("/");
   });
 });

@@ -1,108 +1,95 @@
-import { screen, waitFor, dummyUserData } from "../../utils/test-utils";
+import { dummyUserData } from "../../utils/test-utils";
 import Header from "../Header";
-import * as useLocalStorage from "../../hooks/useLocalStorage";
 import { useNavigate, useLocation } from "react-router";
 
 const navigateMockFn = vi.fn();
 
-const setLocalStorage = vi.fn();
-
 describe("Header tests", () => {
   beforeEach(() => {
     navigateMockFn.mockClear();
-    useLocalStorage.default = vi.fn(() => [null, setLocalStorage]);
     useNavigate.mockImplementation(() => navigateMockFn);
     useLocation.mockImplementation(() => ({ pathname: "/" }));
   });
 
-  it("should render", () => {
-    render(<Header />);
+  it("should render", async () => {
+    const screen = render(<Header />);
 
-    const carsList = screen.getByRole("button", {
+    const carsList = await screen.getByRole("button", {
       name: /my cars/i,
     });
-    const addCars = screen.getByRole("button", {
+    const addCars = await screen.getByRole("button", {
       name: /add cars/i,
     });
-    const themeToggle = screen.getByRole("button", {
+    const themeToggle = await screen.getByRole("button", {
       name: /change theme/i,
     });
 
-    expect(carsList).toBeVisible();
-    expect(addCars).toBeVisible();
-    expect(themeToggle).toBeVisible();
+    await expect.element(carsList).toBeVisible();
+    await expect.element(addCars).toBeVisible();
+    await expect.element(themeToggle).toBeVisible();
   });
 
-  it("should render logout button when authenticated", () => {
-    useLocalStorage.default = vi.fn(() => [dummyUserData, setLocalStorage]);
+  it("should render logout button when authenticated", async () => {
+    const screen = render(<Header />);
 
-    render(<Header />);
-    const logoutButton = screen.getByLabelText(
+    const logoutButton = await screen.getByLabelText(
       `Logout from ${dummyUserData.username}`
     );
-    expect(logoutButton).toBeVisible();
+    await expect.element(logoutButton).toBeVisible();
   });
 
   it("should logout on logout click", async () => {
-    useLocalStorage.default = vi.fn(() => [dummyUserData, setLocalStorage]);
-
-    const { user } = render(<Header />);
-    const logoutButton = screen.getByLabelText(
+    const screen = render(<Header />);
+    const logoutButton = await screen.getByLabelText(
       `Logout from ${dummyUserData.username}`
     );
 
     await user.click(logoutButton);
-    await waitFor(() => expect(setLocalStorage).toHaveBeenCalledWith(null));
+    await expect(window.localStorage.getItem("loggedUser")).toBe("null");
   });
 
   it("should redirect to login when unauthenticated and on homepage", async () => {
+    window.localStorage.setItem("loggedUser", null);
     render(<Header />);
-    await waitFor(() => expect(navigateMockFn).toHaveBeenCalledWith("/login"));
+    await expect(navigateMockFn).toHaveBeenCalledWith("/login");
   });
 
   it("shouldnt redirect to login when authenticated", async () => {
-    useLocalStorage.default = vi.fn(() => [dummyUserData, setLocalStorage]);
     render(<Header />);
-    await waitFor(() =>
-      expect(navigateMockFn).not.toHaveBeenCalledWith("/login")
-    );
+    await expect(navigateMockFn).not.toHaveBeenCalledWith("/login");
   });
 
   it("shouldnt redirect to login when unauthenticated and on login page", async () => {
     useLocation.mockImplementation(() => ({ pathname: "/login" }));
     render(<Header />);
-    await waitFor(() =>
-      expect(navigateMockFn).not.toHaveBeenCalledWith("/login")
-    );
+    await expect(navigateMockFn).not.toHaveBeenCalledWith("/login");
   });
 
   it("shouldnt redirect to login when unauthenticated and on register page", async () => {
     useLocation.mockImplementation(() => ({ pathname: "/register" }));
     render(<Header />);
-    await waitFor(() =>
-      expect(navigateMockFn).not.toHaveBeenCalledWith("/login")
-    );
+    await expect(navigateMockFn).not.toHaveBeenCalledWith("/login");
   });
 
   it("should navigate to new page on nav item click", async () => {
-    const { user } = render(<Header />);
+    const screen = render(<Header />);
 
-    const carsList = screen.getByRole("button", {
+    const carsList = await screen.getByRole("button", {
       name: /my cars/i,
     });
     await user.click(carsList);
-    expect(navigateMockFn).toHaveBeenCalledWith("/cars");
+    await expect(navigateMockFn).toHaveBeenCalledWith("/cars");
   });
 
-  it("should have dark mode toggled on", () => {
-    render(<Header isDarkMode={true} />);
-    const darkModeButton = screen.getByTestId("dark_mode");
-    expect(darkModeButton).toBeVisible();
+  it("should have dark mode toggled on", async () => {
+    const screen = render(<Header isDarkMode={true} />);
+    const darkModeButton = await screen.getByTestId("dark_mode");
+    await expect.element(darkModeButton).toBeVisible();
   });
 
-  it("should have light mode toggled on", () => {
-    render(<Header isDarkMode={false} />);
-    const lightModeButton = screen.getByTestId("light_mode");
-    expect(lightModeButton).toBeVisible();
+  it("should have light mode toggled on", async () => {
+    const screen = render(<Header isDarkMode={false} />);
+    const lightModeButton = await screen.getByTestId("light_mode");
+    await expect.element(lightModeButton).toBeVisible();
   });
 });

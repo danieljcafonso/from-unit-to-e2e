@@ -1,10 +1,9 @@
-import "@testing-library/jest-dom/vitest";
-import * as useLocalStorage from "./hooks/useLocalStorage";
-import { dummyUserData } from "./utils/test-utils";
-import { customRender } from "./utils/test-utils";
-import { server } from "./mocks/server";
+import { worker } from "./mocks/worker";
+import { customRender, dummyUserData } from "./utils/test-utils";
+import { userEvent } from "@vitest/browser/context";
 
-global.render = customRender; // make render available in all tests
+window.render = customRender; // make render available in all tests
+window.user = userEvent.setup();
 
 vi.mock("react-router", () => ({
   ...vi.importActual("react-router"),
@@ -12,16 +11,13 @@ vi.mock("react-router", () => ({
   useLocation: vi.fn(),
 }));
 
-const useLocalStorageOriginalImplementation = useLocalStorage.default;
-
-beforeAll(() => server.listen());
+beforeAll(() => worker.start());
+afterEach(() => worker.resetHandlers());
 
 beforeEach(() => {
-  useLocalStorage.default = vi.fn(() => [dummyUserData, vi.fn()]);
+  window.localStorage.setItem("loggedUser", JSON.stringify(dummyUserData));
 });
-
-afterEach(() => server.resetHandlers());
 afterAll(() => {
-  useLocalStorage.default = useLocalStorageOriginalImplementation;
-  server.close();
+  window.localStorage.setItem("loggedUser", null);
+  worker.stop();
 });

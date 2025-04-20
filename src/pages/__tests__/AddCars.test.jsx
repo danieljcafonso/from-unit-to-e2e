@@ -1,8 +1,9 @@
 import AddCars from "../AddCars";
-import { screen, waitFor, dummyCarCreateData } from "../../utils/test-utils";
+import { dummyCarCreateData } from "../../utils/test-utils";
 import { useNavigate } from "react-router";
 import { http, HttpResponse } from "msw";
-import { server } from "../../mocks/server";
+import { worker } from "../../mocks/worker";
+import { page } from "@vitest/browser/context";
 
 const navigateMockFn = vi.fn();
 
@@ -11,76 +12,76 @@ describe("AddCars tests", () => {
     useNavigate.mockImplementation(() => navigateMockFn);
   });
 
-  it("should render", () => {
+  it("should render", async () => {
     render(<AddCars />);
-    const segment = screen.getByTestId(/segment/i);
-    const model = screen.getByRole("textbox", {
+    const segment = page.getByTestId(/segment/i);
+    const model = page.getByRole("textbox", {
       name: /model/i,
     });
-    const brand = screen.getByRole("textbox", {
+    const brand = page.getByRole("textbox", {
       name: /brand/i,
     });
-    const fuel = screen.getByRole("textbox", {
+    const fuel = page.getByRole("textbox", {
       name: /fuel/i,
     });
-    const price = screen.getByRole("spinbutton", {
+    const price = page.getByRole("spinbutton", {
       name: /price/i,
     });
-    const photo = screen.getByRole("textbox", {
+    const photo = page.getByRole("textbox", {
       name: /photo url/i,
     });
-    const addButton = screen.getByRole("button", {
+    const addButton = page.getByRole("button", {
       name: /add car/i,
     });
 
-    expect(segment).toBeVisible();
-    expect(model).toBeVisible();
-    expect(brand).toBeVisible();
-    expect(fuel).toBeVisible();
-    expect(price).toBeVisible();
-    expect(photo).toBeVisible();
-    expect(addButton).toBeVisible();
+    await expect.element(segment).toBeVisible();
+    await expect.element(model).toBeVisible();
+    await expect.element(brand).toBeVisible();
+    await expect.element(fuel).toBeVisible();
+    await expect.element(price).toBeVisible();
+    await expect.element(photo).toBeVisible();
+    await expect.element(addButton).toBeVisible();
   });
 
   it("shouldnt allow to submit an empty form", async () => {
-    const { user } = render(<AddCars />);
-    const addButton = screen.getByRole("button", {
+    render(<AddCars />);
+    const addButton = page.getByRole("button", {
       name: /add car/i,
     });
     await user.click(addButton);
-    const errorMessage = await screen.findByText(/please fill in all data/i);
-    expect(errorMessage).toBeVisible();
+    const errorMessage = page.getByText(/please fill in all data/i);
+    await expect.element(errorMessage).toBeVisible();
   });
 
   it("shouldnt allow to submit a negative number", async () => {
-    const { user } = render(<AddCars />);
-    const segment = screen.getByRole("combobox", {
+    render(<AddCars />);
+    const segment = page.getByRole("combobox", {
       name: /segment/i,
     });
-    const model = screen.getByRole("textbox", {
+    const model = page.getByRole("textbox", {
       name: /model/i,
     });
-    const brand = screen.getByRole("textbox", {
+    const brand = page.getByRole("textbox", {
       name: /brand/i,
     });
-    const fuel = screen.getByRole("textbox", {
+    const fuel = page.getByRole("textbox", {
       name: /fuel/i,
     });
-    const price = screen.getByRole("spinbutton", {
+    const price = page.getByRole("spinbutton", {
       name: /price/i,
     });
-    const photo = screen.getByRole("textbox", {
+    const photo = page.getByRole("textbox", {
       name: /photo url/i,
     });
-    const addButton = screen.getByRole("button", {
+    const addButton = page.getByRole("button", {
       name: /add car/i,
     });
 
     await user.click(segment);
-    const selectOption = screen.getByRole("option", {
+    const selectOption = page.getByRole("option", {
       name: dummyCarCreateData.segment,
     });
-    user.click(selectOption);
+    await user.click(selectOption);
     await user.type(model, dummyCarCreateData.model);
     await user.type(brand, dummyCarCreateData.brand);
     await user.type(fuel, dummyCarCreateData.fuel);
@@ -90,38 +91,38 @@ describe("AddCars tests", () => {
 
     await user.click(addButton);
 
-    const errorMessage = await screen.findByText(
+    const errorMessage = page.getByText(
       /the price needs to be greater than 0/i
     );
-    expect(errorMessage).toBeVisible();
+    await expect.element(errorMessage).toBeVisible();
   });
 
   it("should add a car", async () => {
-    const { user } = render(<AddCars />);
-    const segment = screen.getByRole("combobox", {
+    render(<AddCars />);
+    const segment = page.getByRole("combobox", {
       name: /segment/i,
     });
-    const model = screen.getByRole("textbox", {
+    const model = page.getByRole("textbox", {
       name: /model/i,
     });
-    const brand = screen.getByRole("textbox", {
+    const brand = page.getByRole("textbox", {
       name: /brand/i,
     });
-    const fuel = screen.getByRole("textbox", {
+    const fuel = page.getByRole("textbox", {
       name: /fuel/i,
     });
-    const price = screen.getByRole("spinbutton", {
+    const price = page.getByRole("spinbutton", {
       name: /price/i,
     });
-    const photo = screen.getByRole("textbox", {
+    const photo = page.getByRole("textbox", {
       name: /photo url/i,
     });
-    const addButton = screen.getByRole("button", {
+    const addButton = page.getByRole("button", {
       name: /add car/i,
     });
 
     await user.click(segment);
-    const selectOption = screen.getByRole("option", {
+    const selectOption = page.getByRole("option", {
       name: dummyCarCreateData.segment,
     });
     await user.click(selectOption);
@@ -134,36 +135,36 @@ describe("AddCars tests", () => {
 
     await user.click(addButton);
 
-    const successMessage = await screen.findByText(/car was created/i);
-    expect(successMessage).toBeVisible();
+    const successMessage = page.getByText(/car was created/i);
+    await expect.element(successMessage).toBeVisible();
   });
 
   it("should navigate to cars list after submit", async () => {
-    const { user } = render(<AddCars />);
-    const segment = screen.getByRole("combobox", {
+    render(<AddCars />);
+    const segment = page.getByRole("combobox", {
       name: /segment/i,
     });
-    const model = screen.getByRole("textbox", {
+    const model = page.getByRole("textbox", {
       name: /model/i,
     });
-    const brand = screen.getByRole("textbox", {
+    const brand = page.getByRole("textbox", {
       name: /brand/i,
     });
-    const fuel = screen.getByRole("textbox", {
+    const fuel = page.getByRole("textbox", {
       name: /fuel/i,
     });
-    const price = screen.getByRole("spinbutton", {
+    const price = page.getByRole("spinbutton", {
       name: /price/i,
     });
-    const photo = screen.getByRole("textbox", {
+    const photo = page.getByRole("textbox", {
       name: /photo url/i,
     });
-    const addButton = screen.getByRole("button", {
+    const addButton = page.getByRole("button", {
       name: /add car/i,
     });
 
     await user.click(segment);
-    const selectOption = screen.getByRole("option", {
+    const selectOption = page.getByRole("option", {
       name: dummyCarCreateData.segment,
     });
     await user.click(selectOption);
@@ -176,36 +177,37 @@ describe("AddCars tests", () => {
 
     await user.click(addButton);
 
-    await waitFor(() => expect(navigateMockFn).toHaveBeenCalledWith("/cars"));
+    await expect(navigateMockFn).toHaveBeenCalledWith("/cars");
   });
 
   it("should show error on fail submit", async () => {
-    server.use(http.post("*", () => HttpResponse.json(null, { status: 403 })));
-    const { user } = render(<AddCars />);
-    const segment = screen.getByRole("combobox", {
+    worker.use(http.post("*", () => HttpResponse.json(null, { status: 403 })));
+
+    render(<AddCars />);
+    const segment = page.getByRole("combobox", {
       name: /segment/i,
     });
-    const model = screen.getByRole("textbox", {
+    const model = page.getByRole("textbox", {
       name: /model/i,
     });
-    const brand = screen.getByRole("textbox", {
+    const brand = page.getByRole("textbox", {
       name: /brand/i,
     });
-    const fuel = screen.getByRole("textbox", {
+    const fuel = page.getByRole("textbox", {
       name: /fuel/i,
     });
-    const price = screen.getByRole("spinbutton", {
+    const price = page.getByRole("spinbutton", {
       name: /price/i,
     });
-    const photo = screen.getByRole("textbox", {
+    const photo = page.getByRole("textbox", {
       name: /photo url/i,
     });
-    const addButton = screen.getByRole("button", {
+    const addButton = page.getByRole("button", {
       name: /add car/i,
     });
 
     await user.click(segment);
-    const selectOption = screen.getByRole("option", {
+    const selectOption = page.getByRole("option", {
       name: dummyCarCreateData.segment,
     });
     await user.click(selectOption);
@@ -218,9 +220,9 @@ describe("AddCars tests", () => {
 
     await user.click(addButton);
 
-    const errorMessage = await screen.findByText(
+    const errorMessage = page.getByText(
       /something went wrong when creating a car/i
     );
-    expect(errorMessage).toBeVisible();
+    await expect.element(errorMessage).toBeVisible();
   });
 });

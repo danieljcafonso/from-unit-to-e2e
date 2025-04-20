@@ -1,8 +1,7 @@
-import { render as rtlRender } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AuthProvider from "../context/AuthContext";
 import { SnackbarProvider } from "notistack";
-import userEvent from "@testing-library/user-event";
+import { render } from "vitest-browser-react";
 
 export const dummyUserData = { username: "daniel", email: "daniel@admin.com" };
 
@@ -48,9 +47,6 @@ export const customRender = (ui, { ...options } = {}) => {
     );
   };
   return {
-    user: userEvent.setup(),
-    ...rtlRender(ui, { wrapper: CombinedProviders, ...options }),
+    ...render(ui, { wrapper: CombinedProviders, ...options }),
   };
 };
-
-export * from "@testing-library/react";
