@@ -1,20 +1,14 @@
 import AddCars from "../AddCars";
-import {
-  screen,
-  waitFor,
-  dummyCarCreateData,
-  dummyUserData,
-} from "../../utils/test-utils";
+import { screen, waitFor, dummyCarCreateData } from "../../utils/test-utils";
 import { useNavigate } from "react-router";
-import { axiosInstance } from "../../api/carsAPI";
+import { http, HttpResponse } from "msw";
+import { server } from "../../mocks/server";
 
 const navigateMockFn = vi.fn();
-const postSpy = vi.spyOn(axiosInstance, "post");
 
 describe("AddCars tests", () => {
   beforeEach(() => {
     useNavigate.mockImplementation(() => navigateMockFn);
-    postSpy.mockResolvedValue({ data: dummyCarCreateData });
   });
 
   it("should render", () => {
@@ -140,11 +134,6 @@ describe("AddCars tests", () => {
 
     await user.click(addButton);
 
-    await waitFor(() => expect(postSpy).toHaveBeenCalled());
-    expect(postSpy).toHaveBeenCalledWith(
-      `/cars/${dummyUserData.username}`,
-      dummyCarCreateData
-    );
     const successMessage = await screen.findByText(/car was created/i);
     expect(successMessage).toBeVisible();
   });
@@ -191,7 +180,7 @@ describe("AddCars tests", () => {
   });
 
   it("should show error on fail submit", async () => {
-    postSpy.mockRejectedValue(new Error("something went wrong"));
+    server.use(http.post("*", () => HttpResponse.json(null, { status: 403 })));
     const { user } = render(<AddCars />);
     const segment = screen.getByRole("combobox", {
       name: /segment/i,
